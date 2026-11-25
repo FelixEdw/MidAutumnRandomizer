@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mid-Autumn Festival Moon Randomizer</title>
+  <link rel="icon" type="image/png" href="MoonRandom.png">
+  
+  <!-- Google Fonts: Kaligrafi, Oriental Serif, & Modern Clean UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel:wght@500;600;700&family=Great+Vibes&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Canvas Partikel Hujan Daun Melayang -->
+  <canvas id="leafCanvas"></canvas>
+
+  <!-- Canvas Efek Kembang Api / Confetti saat Pemenang Muncul -->
+  <canvas id="sparkleCanvas"></canvas>
+
+  <div class="app-container">
+    <!-- Header Banner Ornamen Mid-Autumn -->
+    <header class="header-banner">
+      <div class="header-frame">
+        <img src="TextBox Header.png" alt="Header Banner" class="header-bg-img">
+        <div class="header-text-container">
+          <span class="header-en">Happy mid autumn</span>
+          <span class="header-separator">-</span>
+          <span class="header-cn">祝您中秋节快乐</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MODE SWITCHER TABS (ORIENTAL STYLE) -->
+ <!---->   <nav class="mode-nav-bar" style="display: none;" aria-label="Pilih Mode Pengundian">
+      <div class="mode-tabs-pill oriental-box">
+        <div class="box-notch tl"></div>
+        <div class="box-notch tr"></div>
+        <div class="box-notch bl"></div>
+        <div class="box-notch br"></div>
+        <button type="button" class="mode-tab-btn active" id="tabModeWheel" title="Mode Roda Putar Klasik">
+          <span class="tab-icon">🌕</span>
+        </button>
+        <button type="button" class="mode-tab-btn" id="tabModeMysteryPin" title="Mode Kotak Interaktif: Buka Satu per Satu">
+          <span class="tab-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+          </span>
+        </button> 
+        <button type="button" class="mode-tab-btn" id="tabModeRoller" title="Mode 3: Sesuai Desain Baru (Roller Rotasi & Berhenti Berurutan)">
+          <span class="tab-icon">🎰</span>   
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN VIEW: Tampilan Utama (Sesuai Gambar Mockup) -->
+    <main class="main-content hidden" id="pickerView">
+      <!-- Kolom Kiri: Roda Bulan Purnama -->
+      <section class="wheel-section">
+        <div class="wheel-stage">
+          <!-- Jarum Penunjuk Emas -->
+          <div class="wheel-pointer" id="wheelPointer" title="Penunjuk Pemenang">
+            <svg viewBox="0 0 40 48" class="pointer-svg" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.6))">
+              <path d="M20 44 L5 12 C3 8 8 2 14 2 L26 2 C32 2 37 8 35 12 Z" fill="url(#goldGrad)" stroke="#ffd700" stroke-width="1.5" />
+              <circle cx="20" cy="14" r="5" fill="#fff5cc" />
+              <circle cx="20" cy="14" r="2.5" fill="#d49419" />
+              <defs>
+                <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#ffe27a" />
+                  <stop offset="50%" stop-color="#d99920" />
+                  <stop offset="100%" stop-color="#936200" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <!-- Canvas Roda Bulan Berputar -->
+          <div class="wheel-container" id="wheelWrapper">
+            <canvas id="moonWheelCanvas" width="800" height="800"></canvas>
+            
+            <!-- Tombol Center Putar -->
+            <button class="wheel-center-btn" id="btnSpinCenter" title="Klik untuk memutar!">
+              <div class="center-btn-inner">
+                <span class="center-btn-cn">转动</span>
+                <span class="center-btn-text">PUTAR</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Badge Status Nama Ditunjuk -->
+          <div class="wheel-active-ticker" id="wheelTicker">
+            <span class="ticker-label">Memilih · 抽取:</span>
+            <span class="ticker-name" id="currentTickerName">Siap Memutar · 准备就绪</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Kolom Kanan: Panel Kontrol & Kotak Pemenang -->
+      <section class="controls-section">
+        <!-- Baris Atas: Input Jumlah Pemenang, Inputan Nama, dan Kelinci -->
+        <div class="controls-top-row">
+          <!-- Input Jumlah Pemenang -->
+          <div class="oriental-box winner-count-card">
+            <div class="box-notch tl"></div>
+            <div class="box-notch tr"></div>
+            <div class="box-notch bl"></div>
+            <div class="box-notch br"></div>
+            <label for="winnerCountInput" class="box-label">jmlh pemenang</label>
+            <div class="count-input-inner">
+              <button type="button" class="btn-step" id="btnDecCount" aria-label="Kurangi">-</button>
+              <input type="number" id="winnerCountInput" value="10" min="1" max="200">
+              <button type="button" class="btn-step" id="btnIncCount" aria-label="Tambah">+</button>
+            </div>
+          </div>
+
+          <!-- Inputan Nama -->
+          <div class="oriental-box names-input-card">
+            <div class="box-notch tl"></div>
+            <div class="box-notch tr"></div>
+            <div class="box-notch bl"></div>
+            <div class="box-notch br"></div>
+            <div class="names-card-header">
+              <label for="namesQuickInput" class="box-label">Inputan nama</label>
+              <div class="names-header-actions">
+                <span class="participant-badge" id="participantCountBadge">0 Peserta</span>
+                <button type="button" class="btn-text-action" id="btnOpenNamesModal" title="Kelola / Paste Daftar Nama">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Kelola Daftar
+                </button>
+              </div>
+            </div>
+            <textarea id="namesQuickInput" placeholder="Ketik atau paste nama di sini... (pisahkan dengan Enter)" rows="2" spellcheck="false"></textarea>
+          </div>
+
+          <!-- Bunny Decoration Sejajar dengan Inputan Nama -->
+          <div class="bunny-wrapper" title="Mid-Autumn Moon Rabbit">
+            <img src="BunnyPict.png" alt="Bunny Decoration" class="bunny-img bunny-float">
+          </div>
+        </div>
+
+        <!-- Area Kotak Pemenang (Generated Per Spin) -->
+        <div class="winner-boxes-section">
+          <div class="winner-boxes-header">
+            <div class="winner-header-title-group">
+              <span class="section-title">Kotak Pemenang <span class="title-cn">· 获奖名单</span></span>
+              <span class="mode-indicator-pill" id="boxModeIndicator">Mode: Roda Bulan</span>
+            </div>
+            <div class="winner-header-actions">
+              <span class="slots-progress-badge" id="slotsProgressBadge">0 / 10 Terpilih</span>
+            </div>
+          </div>
+
+          <!-- Container Grid Kotak Pemenang Dinamis -->
+          <div class="winner-slots-grid" id="winnerSlotsGrid">
+            <!-- Diisi secara dinamis oleh JavaScript -->
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Utama -->
+        <div class="action-bar-container">
+          <button type="button" class="btn-primary-roll" id="btnRollMain">
+            <span class="roll-glow"></span>
+            <span class="roll-icon">🌕</span>
+            <span class="roll-text" id="rollMainText">PUTAR JUARA 1 (1/6)</span>
+          </button>
+
+          <div class="secondary-actions-row">
+            <button type="button" class="btn-subtle" id="btnAutoSpinToggle" title="Putar otomatis berurutan sampai semua terisi">
+              <span class="subtle-icon"></span>
+              <span id="autoSpinLabel">Putar Otomatis</span>
+            </button>
+            <button type="button" class="btn-subtle" id="btnResetSlots" title="Kosongkan kotak pemenang untuk diulang">
+              <span class="subtle-icon">↺</span>
+              <span>Reset Box</span>
+            </button>
+            <button type="button" class="btn-subtle btn-new-round" id="btnNewRound" title="Hapus para pemenang dari daftar dan mulai ronde baru">
+              <span class="subtle-icon"></span>
+              <span>New Round >>>></span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- MODE 3: ROLLER GRID (SESUAI MOCKUP DESAIN TERBARU) -->
+    <section class="roller-mode-section" id="rollerView">
+      <!-- Baris Atas: Kelinci Kiri, Inputan Tengah, Kelinci Kanan -->
+      <div class="roller-top-bar">
+        <!-- Kelinci Kiri dengan Lentera & Bulan -->
+        <div class="roller-bunny-wrapper left" title="Mid-Autumn Moon Rabbit">
+          <img src="BunnyPict.png" alt="Bunny Left" class="roller-bunny-img bunny-float">
+        </div>
+
+        <!-- Kelompok Input Tengah: jmlh pemenang & Inputan nama -->
+        <div class="roller-inputs-group">
+          <!-- Jmlh Pemenang -->
+          <div class="roller-input-field">
+            <label for="rollerWinnerCountInput" class="roller-label">jmlh pemenang</label>
+            <div class="oriental-box roller-count-box">
+              <div class="box-notch tl"></div>
+              <div class="box-notch tr"></div>
+              <div class="box-notch bl"></div>
+              <div class="box-notch br"></div>
+              <div class="roller-count-inner">
+                <button type="button" class="btn-step" id="btnRollerDecCount" aria-label="Kurangi">-</button>
+                <input type="number" id="rollerWinnerCountInput" value="6" min="1" max="200">
+                <button type="button" class="btn-step" id="btnRollerIncCount" aria-label="Tambah">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inputan Nama -->
+          <div class="roller-input-field roller-names-field">
+            <div class="roller-names-header">
+              <label for="rollerNamesQuickInput" class="roller-label">Inputan nama</label>
+              <div class="roller-names-actions">
+                <span class="participant-badge" id="rollerParticipantBadge">0 Peserta</span>
+                <button type="button" class="btn-text-action" id="btnRollerOpenNamesModal" title="Kelola / Paste Daftar Nama">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Kelola
+                </button>
+              </div>
+            </div>
+            <div class="oriental-box roller-names-box">
+              <div class="box-notch tl"></div>
+              <div class="box-notch tr"></div>
+              <div class="box-notch bl"></div>
+              <div class="box-notch br"></div>
+              <textarea id="rollerNamesQuickInput" placeholder="Ketik atau paste nama di sini... (pisahkan dengan Enter)" rows="2" spellcheck="false"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kelinci Kanan Makan Mooncake -->
+        <div class="roller-bunny-wrapper right" title="Bunny Family Feasting">
+          <img src="BunnyNewAsset.png" alt="Bunny Right" class="roller-bunny-img bunny-float">
+        </div>
+      </div>
+
+      <!-- Grid Kotak Roller 2 Kolom -->
+      <div class="roller-grid-wrapper">
+        <div class="roller-slots-grid" id="rollerSlotsGrid">
+          <!-- Diisi secara dinamis oleh JavaScript -->
+        </div>
+      </div>
+
+      <!-- Baris Bawah: Mooncake di Kiri Bawah, Tombol START di Tengah -->
+      <div class="roller-bottom-bar">
+        <!-- Hiasan Mooncake Kiri Bawah Sesuai Gambar Desain -->
+        <div class="roller-mooncake-wrapper" title="Mid-Autumn Mooncakes">
+          <img src="MoonCake Assets.png" alt="Mooncake Ornament" class="roller-mooncake-img">
+        </div>
+
+        <!-- Tombol START / STOP di Tengah -->
+        <div class="roller-action-group">
+          <button type="button" class="oriental-box btn-roller-start" id="btnRollerStartStop">
+            <div class="box-notch tl"></div>
+            <div class="box-notch tr"></div>
+            <div class="box-notch bl"></div>
+            <div class="box-notch br"></div>
+            <span class="btn-roller-text" id="rollerStartStopText">START</span>
+          </button>
+
+          <div class="roller-sub-actions">
+            <button type="button" class="btn-subtle" id="btnRollerReset" title="Reset semua kotak roller">
+              <span class="subtle-icon">↺</span>
+              <span>Reset Box</span>
+            </button>
+            <button type="button" class="btn-subtle btn-new-round" id="btnRollerNewRound" title="Hapus pemenang & mulai ronde baru">
+              <span>New Round >>>>></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Spacer kanan penyeimbang agar tombol START presisi di tengah -->
+        <div class="roller-bottom-spacer" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <!-- MODAL: KELOLA DAFTAR NAMA LENGKAP -->
+    <div class="modal-overlay hidden" id="namesModal">
+      <div class="modal-container oriental-box">
+        <div class="box-notch tl"></div>
+        <div class="box-notch tr"></div>
+        <div class="box-notch bl"></div>
+        <div class="box-notch br"></div>
+
+        <div class="modal-header">
+          <h3 class="modal-title">Kelola Daftar Nama Peserta <span class="title-cn">· 参赛名单管理</span></h3>
+          <button type="button" class="btn-modal-close" id="btnCloseNamesModal">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-hint">Masukkan satu nama per baris (tekan Enter). Anda bisa langsung copy-paste dari Excel atau file teks.</p>
+          <textarea id="modalNamesTextarea" class="modal-textarea" rows="12" placeholder="Contoh:&#10;Budi Santoso&#10;Siti Rahma&#10;Felix Hartono&#10;Dewi Lestari" spellcheck="false"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <div class="modal-footer-left">
+            <button type="button" class="btn-subtle" id="btnSampleNamesModal">
+              <span>Isi Contoh Nama</span>
+            </button>
+            <button type="button" class="btn-subtle" id="btnShuffleNamesModal">
+              <span>Acak Urutan</span>
+            </button>
+            <button type="button" class="btn-subtle btn-danger" id="btnClearNamesModal">
+              <span>Bersihkan</span>
+            </button>
+          </div>
+          <div class="modal-footer-right">
+            <button type="button" class="btn-primary-small" id="btnSaveNamesModal">
+              <span>Simpan & Terapkan</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SELEBRASI POPUP KETIKA SEMUA PEMENANG SELESAI -->
+    <div class="modal-overlay hidden" id="grandCelebrationModal">
+      <div class="modal-container celebration-container oriental-box">
+        <div class="box-notch tl"></div>
+        <div class="box-notch tr"></div>
+        <div class="box-notch bl"></div>
+        <div class="box-notch br"></div>
+
+        <div class="celebration-content">
+          <div class="result-header-ornament">
+            <span class="ornament-line left"></span>
+            <span class="ornament-flower">🥮 🪷 🥮</span>
+            <span class="ornament-line right"></span>
+          </div>
+          <h2 class="winner-title-cn">祝贺得奖 · 中秋锦鲤</h2>
+          <h1 class="celebration-heading">Semua Pemenang Telah Terpilih!</h1>
+          <p class="celebration-subheading">Selamat kepada seluruh pemenang undian Mid-Autumn Festival!</p>
+
+          <div class="celebration-actions">
+            <button type="button" class="btn-primary-roll" id="btnCelebrateNewRound">
+              <span class="roll-text">Mulai Ronde Berikutnya (Eliminasi Pemenang)</span>
+            </button>
+            <button type="button" class="btn-subtle" id="btnCloseCelebrationModal">
+              <span>Lihat Hasil di Kotak</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Hiasan Tumpukan Daun Mid-Autumn -->
+    <footer class="app-footer" aria-hidden="true">
+      <div class="footer-leaves"></div>
+    </footer>
+  </div> 
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toastMessage"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+<!--赵昀
+彭占科
+袁红强
+陈亮
+徐伟
+唐志强
+何蕊
+李玉蓉
+郑上京
+吴丽萍
+韩亚栋
+袁诚湖
+张西辉
+汪月林
+詹海林
+赵百良
+李涛
+马洪刚
+杜志龙
+王你
+金卫兵
+徐小明
+魏梦
+赵海文
+陈家乐
+陈礼民
+安妮吴
+力联
+方誉婷
+陈伟东
+黎明月
+林凤玲
+郑元钦
+温益丰
+黄佳佳
+钟晓怡
+刘菲妲
+陈丽粉
+吴雅娜
+李爱佳
+Velycia Sevirra 徐丽霞
+杨金莲Vanessa
+Hon Felix Edward
+方镮婷
+傅妮佳
+黄耀进
+王贞
+陈艳媚
+李思越
+邢张珩
+温宣璇
+沈宝玲
+力莲
+莫荣金
+郭嘉
+魏婉玲
+官妮雅
+张宝珠
+孙巧隆
+张琳珂
+邓富丽
+葛俊浩
+任安乐
+善玲
+霞霞
+Frincilla Putri 黄思意
+贝金佑
+马妮雅
+Decky
+Hamdi
+-->
